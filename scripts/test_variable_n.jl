@@ -2,7 +2,7 @@ t = true
 f = false
 test_lasso = t; test_rlasso = t;
 test_MCP = t; test_SCAD = f;
-test_fs = t; test_r1fs = t; test_r2fs = t;
+test_fs = t;
 test_CIO = f; test_SS = f;
 test_L0Learn = t; test_L0L1Learn = t; test_L0L2Learn = t;
 
@@ -24,11 +24,12 @@ include("regression_methods.jl")
 
 #problem specification
 p=Int(1e4); k=50; sparsity_pattern = "bertsimas"; MIC=true; ρ=0.7; SNR=1;
+
 path = string(pwd(), "\\VarN_", "k_", k, "p_", p, "ρ_", ρ,
 "MIC_", MIC, "SNR_", SNR, "pattern_", sparsity_pattern)
 mkdir(path)
+
 num_n = 16; n_min = 500; n_max = 2000; probs_per_n = 10;
-# num_n = 3; n_min = 10; n_max = 10; probs_per_n = 2; p = 110; k=5;
 
 #Arrays for storing metric per size of n
 if test_lasso; lasso_Accuracy_n = Float64[]; lasso_FPR_n  = Float64[]; lasso_RMSE_n  = Float64[]; end
@@ -36,8 +37,6 @@ if test_rlasso; rlasso_Accuracy_n  = Float64[]; rlasso_FPR_n  = Float64[]; rlass
 if test_MCP; MCP_Accuracy_n  = Float64[]; MCP_FPR_n  = Float64[]; MCP_RMSE_n  = Float64[]; end
 if test_SCAD; SCAD_Accuracy_n  = Float64[]; SCAD_FPR_n  = Float64[]; SCAD_RMSE_n  = Float64[]; end
 if test_fs; fs_Accuracy_n  = Float64[]; fs_FPR_n  = Float64[]; fs_RMSE_n  = Float64[]; end
-if test_r1fs; r1fs_Accuracy_n  = Float64[]; r1fs_FPR_n  = Float64[]; r1fs_RMSE_n  = Float64[]; end
-if test_r2fs; r2fs_Accuracy_n  = Float64[]; r2fs_FPR_n  = Float64[]; r2fs_RMSE_n  = Float64[]; end
 if test_CIO; CIO_Accuracy_n  = Float64[]; CIO_FPR_n  = Float64[]; CIO_RMSE_n  = Float64[]; end
 if test_SS; SS_Accuracy_n  = Float64[]; SS_FPR_n  = Float64[]; SS_RMSE_n  = Float64[]; end
 if test_L0Learn; L0Learn_Accuracy_n  = Float64[]; L0Learn_FPR_n  = Float64[]; L0Learn_RMSE_n  = Float64[]; end
@@ -57,8 +56,6 @@ for n in linspace(n_min, n_max, num_n)
     if test_MCP; MCP_Accuracy_array = Float64[]; MCP_FPR_array = Float64[]; MCP_RMSE_array = Float64[]; end
     if test_SCAD; SCAD_Accuracy_array = Float64[]; SCAD_FPR_array = Float64[]; SCAD_RMSE_array = Float64[]; end
     if test_fs; fs_Accuracy_array = Float64[]; fs_FPR_array = Float64[]; fs_RMSE_array = Float64[]; end
-    if test_r1fs; r1fs_Accuracy_array = Float64[]; r1fs_FPR_array = Float64[]; r1fs_RMSE_array = Float64[]; end
-    if test_r2fs; r2fs_Accuracy_array = Float64[]; r2fs_FPR_array = Float64[]; r2fs_RMSE_array = Float64[]; end
     if test_CIO; CIO_Accuracy_array = Float64[]; CIO_FPR_array = Float64[]; CIO_RMSE_array = Float64[]; end
     if test_SS; SS_Accuracy_array = Float64[]; SS_FPR_array = Float64[]; SS_RMSE_array = Float64[]; end
     if test_L0Learn; L0Learn_Accuracy_array = Float64[]; L0Learn_FPR_array = Float64[]; L0Learn_RMSE_array = Float64[]; end
@@ -96,16 +93,6 @@ for n in linspace(n_min, n_max, num_n)
             append!(fs_Accuracy_array, fs_Accuracy); append!(fs_FPR_array, fs_FPR); append!(fs_RMSE_array, fs_RMSE);
             write(results, "fs          $fs_Accuracy $fs_FPR $fs_RMSE\n");
             if fs_support_size < 10; cv_based_on_fs = false; else; cv_based_on_fs = true; end; end
-        if test_r1fs; println("r1fs"); if test_fs == false; fs_object == "pass"; end;
-            @timeit to "r1fs" r1fs_RMSE, r1fs_Accuracy, r1fs_FPR =
-            r1fs(X_train, X_val, X_test, Y_train, Y_val, Y_test, true_support, maxSteps, fs_object);
-            append!(r1fs_Accuracy_array, r1fs_Accuracy); append!(r1fs_FPR_array, r1fs_FPR); append!(r1fs_RMSE_array, r1fs_RMSE);
-            write(results, "r1fs        $r1fs_Accuracy $r1fs_FPR $r1fs_RMSE\n"); end
-        if test_r2fs; println("r2fs"); if test_fs == false; fs_object == "pass"; end;
-            @timeit to "r2fs" r2fs_RMSE, r2fs_Accuracy, r2fs_FPR =
-            r2fs(X_train, X_val, X_test, Y_train, Y_val, Y_test, true_support, maxSteps, fs_object);
-            append!(r2fs_Accuracy_array, r2fs_Accuracy); append!(r2fs_FPR_array, r2fs_FPR); append!(r2fs_RMSE_array, r2fs_RMSE);
-            write(results, "r2fs        $r2fs_Accuracy $r2fs_FPR $r2fs_RMSE\n"); end
         if test_CIO; println("CIO");
             if cv_based_on_fs; min_model_CV = fs_support_size - window; max_model_CV = fs_support_size + window;
             @timeit to "CIO" CIO_RMSE, CIO_Accuracy, CIO_FPR =
@@ -155,12 +142,6 @@ for n in linspace(n_min, n_max, num_n)
     if test_fs; append!(fs_Accuracy_n , nanmean(fs_Accuracy_array));
         append!(fs_FPR_n , nanmean(fs_FPR_array)); append!(fs_RMSE_n , nanmean(fs_RMSE_array));
         write(results, string("fs            ", fs_Accuracy_n[end], " ", fs_FPR_n[end], " ", fs_RMSE_n[end], "\n")); end
-    if test_r1fs; append!(r1fs_Accuracy_n , nanmean(r1fs_Accuracy_array));
-        append!(r1fs_FPR_n , nanmean(r1fs_FPR_array)); append!(r1fs_RMSE_n , nanmean(r1fs_RMSE_array));
-        write(results, string("r1fs          ", r1fs_Accuracy_n[end], " ", r1fs_FPR_n[end], " ", r1fs_RMSE_n[end], "\n")); end
-    if test_r2fs; append!(r2fs_Accuracy_n , nanmean(r2fs_Accuracy_array));
-        append!(r2fs_FPR_n , nanmean(r2fs_FPR_array)); append!(r2fs_RMSE_n , nanmean(r2fs_RMSE_array));
-        write(results, string("r2fs          ", r2fs_Accuracy_n[end], " ", r2fs_FPR_n[end], " ", r2fs_RMSE_n[end], "\n")); end
     if test_CIO; append!(CIO_Accuracy_n , nanmean(CIO_Accuracy_array));
         append!(CIO_FPR_n , nanmean(CIO_FPR_array)); append!(CIO_RMSE_n , nanmean(CIO_RMSE_array));
         write(results, string("CIO           ", CIO_Accuracy_n[end], " ", CIO_FPR_n[end], " ", CIO_RMSE_n[end], "\n")); end
@@ -181,10 +162,10 @@ for n in linspace(n_min, n_max, num_n)
     @save string("VarN_dataArrays_SNR", string(SNR), ".jld")
 end
 
-println(to)
+
 
 using Plots
-# plotly()
+
 Accuracy_plot = plot(title="Accuracy", xlabel="Number of data points", ylabel ="Accuracy %", legend = false)
 FPR_plot = plot(title="FPR", xlabel="Number of data points", ylabel ="FPR %", legend = false)
 RMSE_plot = plot(title="RMSE", xlabel="Number of data points", ylabel ="RMSE", legend = false)
@@ -209,14 +190,6 @@ if test_fs; plot!(Accuracy_plot, N, fs_Accuracy_n*100, label="fs", lw=2, color=:
 plot!(FPR_plot, N, fs_FPR_n*100, label="fs", lw=2, color=:deepskyblue1);
 plot!(RMSE_plot, N, fs_RMSE_n, label="fs", lw=2, color=:deepskyblue1); end
 
-if test_r1fs; plot!(Accuracy_plot, N, r1fs_Accuracy_n*100, label="r1fs", lw=2, color=:dodgerblue);
-plot!(FPR_plot, N, r1fs_FPR_n*100, label="r1fs", lw=2, color=:dodgerblue);
-plot!(RMSE_plot, N, r1fs_RMSE_n, label="r1fs", lw=2, color=:dodgerblue); end
-
-if test_r2fs; plot!(Accuracy_plot, N, r2fs_Accuracy_n*100, label="r2fs", lw=2, color=:cornflowerblue);
-plot!(FPR_plot, N, r2fs_FPR_n*100, label="r2fs", lw=2, color=:cornflowerblue);
-plot!(RMSE_plot, N, r2fs_RMSE_n, label="r2fs", lw=2, color=:cornflowerblue); end
-
 if test_CIO; plot!(Accuracy_plot, N, CIO_Accuracy_n*100, label="CIO", lw=2, color=:green);
 plot!(FPR_plot, N, CIO_FPR_n*100, label="CIO", lw=2, color=:green);
 plot!(RMSE_plot, N, CIO_RMSE_n, label="CIO", lw=2, color=:green); end
@@ -240,6 +213,3 @@ plot!(RMSE_plot, N, L0L2Learn_RMSE_n, label="L0L2Learn", lw=2, color=:darkorchid
 savefig(Accuracy_plot, string(path, "\\Accuracy_plot.png"))
 savefig(FPR_plot, string(path, "\\FPR_plot.png"))
 savefig(RMSE_plot, string(path, "\\RMSE_plot.png"))
-# gui(Accuracy_plot)
-# gui(FPR_plot)
-# gui(RMSE_plot)
