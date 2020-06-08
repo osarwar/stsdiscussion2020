@@ -1,10 +1,15 @@
 t = true
 f = false
-test_lasso = t; test_rlasso = t;
-test_MCP = t; test_SCAD = f;
+test_lasso = t;
+test_rlasso = t;
+test_MCP = t;
+test_SCAD = f;
 test_fs = t;
-test_CIO = f; test_SS = f;
-test_L0Learn = t; test_L0L1Learn = t; test_L0L2Learn = t;
+test_CIO = f;
+test_SS = f;
+test_L0Learn = t;
+test_L0L1Learn = t;
+test_L0L2Learn = t;
 
 if test_lasso || test_rlasso || test_MCP || test_SCAD || test_fs || test_L0Learn; using RCall; end
 if test_fs; maxSteps = 100; end
@@ -19,17 +24,19 @@ if test_L0Learn || test_L0L1Learn || test_L0L2Learn; R"library(L0Learn)"; end
 using TimerOutputs
 const to = TimerOutput()
 using JLD
+
 include("test_utils.jl")
 include("regression_methods.jl")
 
 #problem specification
 p=Int(1e4); k=50; sparsity_pattern = "bertsimas"; MIC=true; ρ=0.7; SNR=1;
 
+num_n = 16; n_min = 500; n_max = 2000; probs_per_n = 10;
+
+#Folder to store results 
 path = string(pwd(), "\\VarN_", "k_", k, "p_", p, "ρ_", ρ,
 "MIC_", MIC, "SNR_", SNR, "pattern_", sparsity_pattern)
 mkdir(path)
-
-num_n = 16; n_min = 500; n_max = 2000; probs_per_n = 10;
 
 #Arrays for storing metric per size of n
 if test_lasso; lasso_Accuracy_n = Float64[]; lasso_FPR_n  = Float64[]; lasso_RMSE_n  = Float64[]; end
